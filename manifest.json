@@ -2,16 +2,25 @@
   "name": "Luka TV",
   "short_name": "Luka TV",
   "description": "مشاهدة أفلام ومسلسلات",
+  "id": "/luka-tv/",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "any",
   "lang": "ar",
   "dir": "rtl",
   "background_color": "#0b0b12",
   "theme_color": "#0b0b12",
+  "categories": ["entertainment", "video"],
   "icons": [
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "أفلام", "url": "./index.html#/movies", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "مسلسلات", "url": "./index.html#/series", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "قائمتي", "url": "./index.html#/favs", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
   ]
 }

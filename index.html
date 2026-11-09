@@ -4,32 +4,48 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b0b12">
+<meta name="color-scheme" content="dark light">
+<meta name="description" content="Luka TV — مشاهدة أفلام ومسلسلات">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Luka TV">
+<meta name="robots" content="noindex,nofollow">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
-<link rel="apple-touch-icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>Luka TV</title>
+<script>try{if(JSON.parse(localStorage.getItem("theme"))==="light")document.documentElement.dataset.theme="light"}catch(e){}</script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header id="topbar">
-  <div class="logo">LUKA <span>TV</span></div>
-  <a href="#/search" class="iconbtn" aria-label="بحث">🔍</a>
+  <a class="logo" href="#/" aria-label="الرئيسية">LUKA <span>TV</span></a>
+  <div class="tools">
+    <a href="#/notifs" id="bell" class="iconbtn" aria-label="الإشعارات">🔔<b id="nb" hidden>0</b></a>
+    <button id="themeBtn" class="iconbtn" aria-label="تغيير المظهر">🌓</button>
+    <a href="#/search" class="iconbtn" aria-label="بحث">🔍</a>
+  </div>
 </header>
 
-<main id="app"></main>
+<main id="app"><div class="empty">جاري التحميل...</div></main>
 
 <nav id="tabs">
-  <a href="#/"><i>🏠</i><span>الرئيسية</span></a>
-  <a href="#/movies"><i>🎬</i><span>أفلام</span></a>
-  <a href="#/series"><i>📺</i><span>مسلسلات</span></a>
-  <a href="#/favs"><i>❤️</i><span>قائمتي</span></a>
-  <a href="#/admin"><i>⚙️</i><span>الإدارة</span></a>
+  <a href="#/" data-r=""><i>🏠</i><span>الرئيسية</span></a>
+  <a href="#/movies" data-r="movies"><i>🎬</i><span>أفلام</span></a>
+  <a href="#/series" data-r="series"><i>📺</i><span>مسلسلات</span></a>
+  <a href="#/favs" data-r="favs"><i>❤️</i><span>قائمتي</span></a>
+  <a href="#/account" data-r="account"><i>👤</i><span>حسابي</span></a>
 </nav>
+
+<div id="modal"></div>
+<div id="toast" class="toast" hidden></div>
+<noscript><div class="empty">التطبيق محتاج JavaScript يكون مفعّل.</div></noscript>
 
 <script type="module" src="app.js"></script>
 <script>
   if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => navigator.serviceWorker.register("sw.js"));
+    window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
   }
 </script>
 </body>
