@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, collection, getDocs, getDoc, doc, addDoc, setDoc, updateDoc, deleteDoc,
+  initializeFirestore, collection, getDocs, getDoc, doc, addDoc, setDoc, updateDoc, deleteDoc,
   query, orderBy, serverTimestamp, increment, getCountFromServer
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
@@ -10,7 +10,7 @@ import {
 import { firebaseConfig, TMDB_KEY, ADMIN_EMAIL } from "./firebase-config.js";
 
 const fb = initializeApp(firebaseConfig);
-const db = getFirestore(fb);
+const db = initializeFirestore(fb, { experimentalAutoDetectLongPolling: true });
 const auth = getAuth(fb);
 const TM = "https://api.themoviedb.org/3";
 const TMDB_IMG = "https://image.tmdb.org/t/p/";
@@ -162,6 +162,7 @@ async function loadTitles(force = false) {
   if (!force && c && Array.isArray(c.data) && Date.now() - c.at < TTL) { titles = c.data; return; }
   try {
     const snap = await getDocs(query(collection(db, "titles"), orderBy("createdAt", "desc")));
+    if (snap.metadata && snap.metadata.fromCache && !snap.docs.length) throw Object.assign(new Error("offline"), { code: "offline" });
     titles = snap.docs.map((d) => {
       const { createdAt, ...r } = d.data();
       return { id: d.id, ...r, _ts: createdAt && createdAt.seconds ? createdAt.seconds * 1000 : 0 };
@@ -170,7 +171,7 @@ async function loadTitles(force = false) {
   } catch (e) {
     console.error(e);
     if (c && Array.isArray(c.data)) titles = c.data;
-    else loadError = "تعذر تحميل المحتوى. تأكد من الإنترنت ومن إعدادات Firebase.";
+    else loadError = `تعذر الاتصال بقاعدة البيانات 😕<br><small>(${esc((e && (e.code || e.message)) || "خطأ")}) — المحتوى موجود ومتخزّن، بس مش قادر أوصله من الشبكة دي. جرّب شبكة تانية أو أعد المحاولة.</small>`;
   }
 }
 
@@ -247,7 +248,11 @@ const rating = (t) => parseFloat(t.rating) || 0;
 
 /* ---------- الرئيسية ---------- */
 function homeView() {
-  if (loadError) return emptyView(esc(loadError));
+  if (loadError) {
+    emptyView(`${loadError}<br><br><button class="btn" id="retry">🔄 إعادة المحاولة</button>`);
+    $("#retry").onclick = async () => { app.innerHTML = '<div class="empty">جاري التحميل...</div>'; await loadTitles(true); initSeen(); updateBadge(); route(); };
+    return;
+  }
   if (!titles.length) return emptyView(`لسه مفيش محتوى 🎬<br>سجّل دخول بحساب الأدمن من تبويب «حسابي» وضيف أول فيلم.`);
   const slides = titles.slice(0, 5);
   const recent = D.recent.map((r) => ({ r, t: titles.find((x) => x.id === r.id) })).filter((x) => x.t);
@@ -598,7 +603,7 @@ function authErr(e) {
     "auth/email-already-in-use": "الإيميل ده مسجّل قبل كده، جرّب تسجيل الدخول", "auth/weak-password": "كلمة السر ضعيفة (6 حروف على الأقل)",
     "auth/invalid-email": "الإيميل غير صحيح", "auth/too-many-requests": "محاولات كتير، استنى شوية وجرّب تاني", "auth/network-request-failed": "مفيش اتصال بالإنترنت"
   };
-  return m[e && e.code] || "حصلت مشكلة، جرّب تاني";
+  return m[e && e.code] || `حصلت مشكلة (${(e && (e.code || e.message)) || "?"})`;
 }
 let accMode = "login";
 function accountView() {
@@ -642,8 +647,9 @@ function accountView() {
   $("#af").onsubmit = async (ev) => {
     ev.preventDefault();
     const em = $("#em").value.trim(), pw = $("#pw").value;
+    const bt = $("#af .btn"); bt.disabled = true; $("#aerr").className = "ok"; $("#aerr").textContent = "جاري الاتصال...";
     try { accMode === "login" ? await signInWithEmailAndPassword(auth, em, pw) : await createUserWithEmailAndPassword(auth, em, pw); }
-    catch (e) { $("#aerr").textContent = authErr(e); }
+    catch (e) { bt.disabled = false; $("#aerr").className = "err"; $("#aerr").textContent = authErr(e); }
   };
   const fg = $("#fg");
   if (fg) fg.onclick = async () => {
@@ -867,9 +873,10 @@ document.addEventListener("keydown", (ev) => {
 });
 
 window.addEventListener("hashchange", route);
-onAuthStateChanged(auth, async (u) => {
+const refreshView = () => { if (!/^#\/(watch|title)/.test(location.hash)) route(); };
+onAuthStateChanged(auth, (u) => {
   user = u; isAdmin = !!(u && u.email && u.email.toLowerCase() === String(ADMIN_EMAIL).toLowerCase());
-  if (u) await pullCloud();
-  if (ready) { updateBadge(); if (!/^#\/(watch|title)/.test(location.hash)) route(); }
+  if (ready) { updateBadge(); refreshView(); }
+  if (u) pullCloud().then(() => { if (ready) { updateBadge(); refreshView(); } });
 });
 loadTitles().then(() => { initSeen(); updateBadge(); ready = true; route(); });
